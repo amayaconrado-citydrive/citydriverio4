@@ -34,7 +34,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .filters button.on{background:var(--inv);color:var(--invfg)}
 .legend{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-bottom:12px;align-items:center}
 .layout{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
-.main{flex:1 1 640px;min-width:0}.side{flex:1 1 300px;max-width:100%}
+.main{flex:1 1 100%;min-width:0}
 .scroll{overflow-x:auto}
 .cal{min-width:760px;border:1px solid var(--fg);border-radius:16px;overflow:hidden}
 .dow,.grid{display:grid;grid-template-columns:repeat(7,1fr)}
@@ -102,7 +102,7 @@ th:first-child,td:first-child{text-align:left;font-weight:700;padding-left:14px}
       <span class="pill s-T">Tarde 14:00–20:00</span>
       <span class="pill s-SM">Sáb Mañ 08:30–13:30</span>
       <span class="pill s-SC">Sáb Comp 8:30–13:30 / 16:30–20</span>
-      <span class="pill s-Z">Zona / Libre</span>
+      <span class="pill s-Z">Zona</span>
       <span class="pill s-E">★ Evento</span>
       <span class="pill s-D">Descanso</span>
     </div>
@@ -111,14 +111,6 @@ th:first-child,td:first-child{text-align:left;font-weight:700;padding-left:14px}
       <div class="grid" id="grid"></div>
     </div></div>
   </div>
-  <aside class="side">
-    <div class="panel"><h3>Control de guardias</h3><ul id="alerts"></ul></div>
-    <div class="panel"><h3>Esquema Citydrive</h3><ul>
-      <li><b>Lunes a viernes:</b> 2 en salón mañana (08:30–14:00), 1 en salón tarde (14:00–20:00) y 2 en Zona / Libre para viajar.</li>
-      <li><b>Sábados:</b> 1 Sáb Mañana (08:30–13:30) y 1 Sáb Completo (08:30–13:30 / 16:30–20:00). El resto descansa, salvo Evento.</li>
-      <li><b>Feriados de noviembre:</b> lun 9 (Visita del Papa), mar 10 (Provincial Córdoba) y lun 23 (Soberanía Nacional).</li>
-    </ul></div>
-  </aside>
 </div>
 
 <section class="card" style="padding:0;overflow:hidden;margin-top:4px">
@@ -126,7 +118,7 @@ th:first-child,td:first-child{text-align:left;font-weight:700;padding-left:14px}
     <h2 style="margin:0;font-size:16px;font-weight:800">Resumen mensual: turnos, zona y objetivos individuales</h2>
   </div>
   <div class="scroll"><table>
-    <thead><tr><th>Vendedor</th><th>Mañ. L-V</th><th>Tar. L-V</th><th>Zona / Libre</th><th>Sáb. salón</th><th>Eventos</th><th>Total jorn.</th><th>Objetivo</th><th>Cerradas</th><th>Proyección</th><th style="min-width:130px">Cumplimiento</th></tr></thead>
+    <thead><tr><th>Vendedor</th><th>Objetivo</th><th>Avance</th><th style="min-width:140px">% Cumplimiento</th><th>Proyección</th><th>Mañ. L-V</th><th>Tar. L-V</th><th>Zona</th><th>Sáb. salón</th><th>Eventos</th><th>Total jorn.</th></tr></thead>
     <tbody id="sum"></tbody>
   </table></div>
 </section>
@@ -136,7 +128,7 @@ th:first-child,td:first-child{text-align:left;font-weight:700;padding-left:14px}
 <script>
 /* ===== DATOS DEL TURNERO (se actualizan desde acá) =====
    Orden de cada día: Valeria, Valentín, Manuel, Emanuel, Ignacio
-   M=Mañana T=Tarde Z=Zona/Libre E=Evento SM=Sáb Mañana SC=Sáb Completo D=Descanso */
+   M=Mañana T=Tarde Z=Zona E=Evento SM=Sáb Mañana SC=Sáb Completo D=Descanso */
 const SELLERS=[{id:"valeria",name:"Valeria"},{id:"valentin",name:"Valentín"},{id:"manuel",name:"Manuel"},{id:"emanuel",name:"Emanuel"},{id:"ignacio",name:"Ignacio"}];
 const SCHEDULE={
 "2026-11-02":"T,Z,M,Z,M","2026-11-03":"Z,M,M,Z,T","2026-11-04":"Z,M,T,M,Z","2026-11-05":"M,T,Z,M,Z","2026-11-06":"M,Z,Z,T,M","2026-11-07":"SM,D,D,D,SC",
@@ -147,12 +139,12 @@ const SCHEDULE={
 "2026-11-24":"M,T,Z,M,Z","2026-11-25":"M,Z,Z,T,M","2026-11-26":"M,Z,T,M,Z","2026-11-27":"T,M,Z,Z,M","2026-11-28":"D,SM,D,D,SC","2026-11-30":"Z,T,M,Z,M"
 };
 const NOTES={};
-const GOALS={"2026-11":{unit:"Unidades",total:29,target:{emanuel:7,ignacio:7,valentin:7,manuel:4,valeria:4},done:{emanuel:0,ignacio:0,valentin:0,manuel:0,valeria:0}}};
+const GOALS={"2026-11":{unit:"Unidades",total:29,target:{emanuel:7,ignacio:7,valentin:7,manuel:4,valeria:4},done:{emanuel:1,ignacio:5,valentin:2,manuel:1,valeria:0}}};
 /* ===== FIN DATOS ===== */
 
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DAYS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-const SH={M:["Mañana","08:30–14:00"],T:["Tarde","14:00–20:00"],SM:["Sáb Mañ","08:30–13:30"],SC:["Sáb Comp","8:30–13:30 / 16:30–20"],Z:["Zona / Libre","Viaje a zona"],E:["Evento","Activación"],D:["Descanso","Sin guardia"]};
+const SH={M:["Mañana","08:30–14:00"],T:["Tarde","14:00–20:00"],SM:["Sáb Mañ","08:30–13:30"],SC:["Sáb Comp","8:30–13:30 / 16:30–20"],Z:["Zona","Viaje a zona"],E:["Evento","Activación"],D:["Descanso","Sin guardia"]};
 const now=new Date();
 let Y=now.getFullYear(),Mo=now.getMonth(),filter="all";
 if(!Object.keys(SCHEDULE).some(k=>k.startsWith(Y+"-"+String(Mo+1).padStart(2,"0")))){Y=2026;Mo=10}
@@ -181,9 +173,9 @@ function pace(){
   return{tot,el,eff:el||1,pct:tot?Math.round(el/tot*100):0};
 }
 function status(p,t){
-  if(t<=0)return{pct:0,c:"var(--mut)"};
+  if(t<=0)return{pct:0,c:"var(--mut)",e:"⚪"};
   const pct=Math.round(p/t*100);
-  return{pct,c:pct>=100?"var(--ok)":pct>=70?"var(--warn)":"var(--bad)"};
+  return{pct,c:pct>=100?"var(--ok)":pct>=70?"var(--warn)":"var(--bad)",e:pct>=100?"🟢":pct>=70?"🟡":"🔴"};
 }
 
 function render(){
@@ -231,15 +223,17 @@ function render(){
     SELLERS.forEach(s=>{
       const c=dd.a[s.id];
       if(dow<6){if(c==="M"){st[s.id].m++;mc++}else if(c==="T"){st[s.id].t++;tc++}else if(c==="E")st[s.id].ev++;else st[s.id].z++}
-      else{if(c==="SM"||c==="SC"){st[s.id].sab++;const f=day(Y,Mo,d-1);if(f&&f.a&&f.a[s.id]==="Z")al.push(`<b>${s.name}</b>: sáb ${d} con guardia pegado al vie ${d-1} en Zona / Libre.`)}else if(c==="E")st[s.id].ev++}
+      else{if(c==="SM"||c==="SC"){st[s.id].sab++;const f=day(Y,Mo,d-1);if(f&&f.a&&f.a[s.id]==="Z")al.push(`<b>${s.name}</b>: sáb ${d} con guardia pegado al vie ${d-1} en Zona.`)}else if(c==="E")st[s.id].ev++}
     });
     if(dow<6){if(mc!==2)al.push(`${DAYS[dow]} ${d}: hay <b>${mc}</b> en Mañana (se requieren 2).`);if(tc!==1)al.push(`${DAYS[dow]} ${d}: hay <b>${tc}</b> en Tarde (se requiere 1).`)}
   }
-  document.getElementById("alerts").innerHTML=al.length?al.slice(0,6).map(a=>`<li>! ${a}</li>`).join(""):`<li><b>Todas las guardias y descansos del mes cumplen el esquema Citydrive.</b></li>`;
-  document.getElementById("sum").innerHTML=SELLERS.map(s=>{
-    const x=st[s.id],tot=x.m+x.t+x.sab+x.ev,tg=g?g.target[s.id]||0:0,dn=g?g.done[s.id]||0:0,pr=p.el?Math.round(dn/p.eff*p.tot*10)/10:0,ps=status(pr,tg),pc=tg?Math.min(100,Math.round(dn/tg*100)):0;
-    return`<tr><td>${s.name}</td><td>${x.m}</td><td>${x.t}</td><td>${x.z}</td><td>${x.sab}</td><td>${x.ev}</td><td><b>${tot}</b></td><td>${tg}</td><td><b>${dn}</b></td><td style="color:${ps.c};font-weight:800">${pr} (${ps.pct}%)</td><td><div style="display:flex;align-items:center;gap:8px"><div class="mini" style="flex:1"><i style="width:${pc}%;background:${ps.c}"></i></div><b style="font-size:12px;color:${ps.c}">${pc}%</b></div></td></tr>`;
-  }).join("");
+  const rows=SELLERS.map(s=>{const x=st[s.id],tg=g?g.target[s.id]||0:0,dn=g?g.done[s.id]||0:0,pr=p.el?Math.round(dn/p.eff*p.tot*10)/10:0;
+    return{s,x,tot:x.m+x.t+x.sab+x.ev,tg,dn,pr,ps:status(pr,tg),pc:tg?Math.min(100,Math.round(dn/tg*100)):0}});
+  rows.sort((a,b)=>b.pc-a.pc||b.ps.pct-a.ps.pct||b.dn-a.dn);
+  document.getElementById("sum").innerHTML=rows.map((r,i)=>`<tr><td>${i===0&&r.pc>0?"🥇 ":""}${r.s.name}</td><td>${r.tg}</td><td><b>${r.dn}</b></td>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="mini" style="flex:1"><i style="width:${r.pc}%;background:${r.ps.c}"></i></div><b style="font-size:12px;color:${r.ps.c}">${r.pc}%</b></div></td>
+    <td style="color:${r.ps.c};font-weight:800;white-space:nowrap">${r.ps.e} ${r.pr} (${r.ps.pct}%)</td>
+    <td>${r.x.m}</td><td>${r.x.t}</td><td>${r.x.z}</td><td>${r.x.sab}</td><td>${r.x.ev}</td><td><b>${r.tot}</b></td></tr>`).join("");
 }
 
 function copyWA(){
@@ -261,45 +255,7 @@ function copyWA(){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(()=>fallback(t,done))}else fallback(t,done);
 }
 function fallback(t,cb){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");cb()}catch(e){toast("No se pudo copiar")}document.body.removeChild(a)}
-/* ===== LECTURA DESDE GOOGLE SHEETS =====
-   Pegá acá los dos links (publicados como CSV). Si quedan vacíos, la página usa los datos de arriba. */
-const URL_TURNOS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1751656908&single=true&output=csv";
-const URL_VENTAS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1741881272&single=true&output=csv";
-function csv(t){const r=[];let row=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===","){row.push(c);c=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(c);r.push(row);row=[];c=""}else c+=ch}if(c!==""||row.length){row.push(c);r.push(row)}return r.filter(x=>x.some(v=>v.trim()!==""))}
-const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
-function pDate(s){s=(s||"").trim();let m;if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))return[+m[1],+m[2],+m[3]];if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return[+m[3],+m[2],+m[1]];return null}
-function pMonth(s){s=(s||"").trim();let m;if(m=s.match(/^(\d{4})-(\d{1,2})/))return m[1]+"-"+String(m[2]).padStart(2,"0");if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return m[3]+"-"+String(m[2]).padStart(2,"0");if(m=s.match(/^(\d{1,2})\/(\d{4})/))return m[2]+"-"+String(m[1]).padStart(2,"0");return null}
-async function get(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"_="+Date.now());if(!r.ok)throw new Error("http");return csv(await r.text())}
-async function loadSheets(){
-  if(!URL_TURNOS)return;
-  try{
-    const t=await get(URL_TURNOS),h=t[0].map(x=>x.trim()),low=h.map(x=>x.toLowerCase());
-    const iF=low.indexOf("fecha"),iH=low.indexOf("feriado"),iN=low.indexOf("nota");
-    const sc=h.map((x,i)=>(!x||["fecha","feriado","nota"].includes(low[i]))?-1:i).filter(i=>i>=0);
-    if(iF<0||!sc.length)throw new Error("formato");
-    const SC={},NT={};
-    t.slice(1).forEach(r=>{const d=pDate(r[iF]);if(!d)return;const k=key(d[0],d[1]-1,d[2]);const hol=iH>=0?(r[iH]||"").trim():"";
-      if(hol)SC[k]="H:"+hol;else SC[k]=sc.map(i=>{const v=(r[i]||"").trim().toUpperCase();return SH[v]?v:"Z"}).join(",");
-      if(iN>=0&&(r[iN]||"").trim())NT[k]=r[iN].trim()});
-    SELLERS.length=0;sc.forEach(i=>SELLERS.push({id:norm(h[i]),name:h[i]}));
-    Object.keys(SCHEDULE).forEach(k=>delete SCHEDULE[k]);Object.assign(SCHEDULE,SC);
-    Object.keys(NOTES).forEach(k=>delete NOTES[k]);Object.assign(NOTES,NT);
-    if(URL_VENTAS){
-      const v=await get(URL_VENTAS),vh=v[0].map(x=>x.trim().toLowerCase()),im=vh.indexOf("mes"),iv=vh.indexOf("vendedor"),ig=vh.indexOf("meta"),ic=vh.indexOf("cerradas");
-      if(im>=0&&iv>=0){
-        const G={};
-        v.slice(1).forEach(r=>{const mk=pMonth(r[im]);if(!mk)return;const g=G[mk]||(G[mk]={unit:"Unidades",total:null,target:{},done:{}});const id=norm((r[iv]||"").trim()),meta=parseInt(r[ig])||0,ce=parseInt(r[ic])||0;
-          if(id==="total")g.total=meta;else{g.target[id]=meta;g.done[id]=ce}});
-        Object.keys(G).forEach(k=>{if(G[k].total===null)G[k].total=Object.values(G[k].target).reduce((a,b)=>a+b,0)});
-        Object.keys(GOALS).forEach(k=>delete GOALS[k]);Object.assign(GOALS,G);
-      }
-    }
-    render();
-  }catch(e){toast("No se pudo leer la planilla; se muestran los últimos datos guardados")}
-}
 render();
-loadSheets();
-setInterval(loadSheets,300000);
 </script>
 </body>
 </html>
