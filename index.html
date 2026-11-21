@@ -263,8 +263,8 @@ function copyWA(){
 function fallback(t,cb){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");cb()}catch(e){toast("No se pudo copiar")}document.body.removeChild(a)}
 /* ===== LECTURA DESDE GOOGLE SHEETS =====
    Pegá acá los dos links (publicados como CSV). Si quedan vacíos, la página usa los datos de arriba. */
-const URL_TURNOS="";
-const URL_VENTAS="";
+const URL_TURNOS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1751656908&single=true&output=csv";
+const URL_VENTAS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1741881272&single=true&output=csv";
 function csv(t){const r=[];let row=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===","){row.push(c);c=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(c);r.push(row);row=[];c=""}else c+=ch}if(c!==""||row.length){row.push(c);r.push(row)}return r.filter(x=>x.some(v=>v.trim()!==""))}
 const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 function pDate(s){s=(s||"").trim();let m;if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))return[+m[1],+m[2],+m[3]];if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return[+m[3],+m[2],+m[1]];return null}
