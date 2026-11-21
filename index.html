@@ -251,7 +251,45 @@ function copyWA(){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(()=>fallback(t,done))}else fallback(t,done);
 }
 function fallback(t,cb){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");cb()}catch(e){toast("No se pudo copiar")}document.body.removeChild(a)}
+/* ===== LECTURA DESDE GOOGLE SHEETS =====
+   Pegá acá los dos links (publicados como CSV). Si quedan vacíos, la página usa los datos de arriba. */
+const URL_TURNOS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1751656908&single=true&output=csv";
+const URL_VENTAS="https://docs.google.com/spreadsheets/d/e/2PACX-1vSK8cRp3b3cyVYkEMNa-i6hxqaAdMZtTsQaX28Q2tDpUJ_keZdYI3nzPOodJYo4ChxkH4RYmST6zR40/pub?gid=1741881272&single=true&output=csv";
+function csv(t){const r=[];let row=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===","){row.push(c);c=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(c);r.push(row);row=[];c=""}else c+=ch}if(c!==""||row.length){row.push(c);r.push(row)}return r.filter(x=>x.some(v=>v.trim()!==""))}
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+function pDate(s){s=(s||"").trim();let m;if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))return[+m[1],+m[2],+m[3]];if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return[+m[3],+m[2],+m[1]];return null}
+function pMonth(s){s=(s||"").trim();let m;if(m=s.match(/^(\d{4})-(\d{1,2})/))return m[1]+"-"+String(m[2]).padStart(2,"0");if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return m[3]+"-"+String(m[2]).padStart(2,"0");if(m=s.match(/^(\d{1,2})\/(\d{4})/))return m[2]+"-"+String(m[1]).padStart(2,"0");return null}
+async function get(u){const r=await fetch(u+(u.includes("?")?"&":"?")+"_="+Date.now());if(!r.ok)throw new Error("http");return csv(await r.text())}
+async function loadSheets(){
+  if(!URL_TURNOS)return;
+  try{
+    const t=await get(URL_TURNOS),h=t[0].map(x=>x.trim()),low=h.map(x=>x.toLowerCase());
+    const iF=low.indexOf("fecha"),iH=low.indexOf("feriado"),iN=low.indexOf("nota");
+    const sc=h.map((x,i)=>(!x||["fecha","feriado","nota"].includes(low[i]))?-1:i).filter(i=>i>=0);
+    if(iF<0||!sc.length)throw new Error("formato");
+    const SC={},NT={};
+    t.slice(1).forEach(r=>{const d=pDate(r[iF]);if(!d)return;const k=key(d[0],d[1]-1,d[2]);const hol=iH>=0?(r[iH]||"").trim():"";
+      if(hol)SC[k]="H:"+hol;else SC[k]=sc.map(i=>{const v=(r[i]||"").trim().toUpperCase();return SH[v]?v:"Z"}).join(",");
+      if(iN>=0&&(r[iN]||"").trim())NT[k]=r[iN].trim()});
+    SELLERS.length=0;sc.forEach(i=>SELLERS.push({id:norm(h[i]),name:h[i]}));
+    Object.keys(SCHEDULE).forEach(k=>delete SCHEDULE[k]);Object.assign(SCHEDULE,SC);
+    Object.keys(NOTES).forEach(k=>delete NOTES[k]);Object.assign(NOTES,NT);
+    if(URL_VENTAS){
+      const v=await get(URL_VENTAS),vh=v[0].map(x=>x.trim().toLowerCase()),im=vh.indexOf("mes"),iv=vh.indexOf("vendedor"),ig=vh.indexOf("meta"),ic=vh.indexOf("cerradas");
+      if(im>=0&&iv>=0){
+        const G={};
+        v.slice(1).forEach(r=>{const mk=pMonth(r[im]);if(!mk)return;const g=G[mk]||(G[mk]={unit:"Unidades",total:null,target:{},done:{}});const id=norm((r[iv]||"").trim()),meta=parseInt(r[ig])||0,ce=parseInt(r[ic])||0;
+          if(id==="total")g.total=meta;else{g.target[id]=meta;g.done[id]=ce}});
+        Object.keys(G).forEach(k=>{if(G[k].total===null)G[k].total=Object.values(G[k].target).reduce((a,b)=>a+b,0)});
+        Object.keys(GOALS).forEach(k=>delete GOALS[k]);Object.assign(GOALS,G);
+      }
+    }
+    render();
+  }catch(e){toast("No se pudo leer la planilla; se muestran los últimos datos guardados")}
+}
 render();
+loadSheets();
+setInterval(loadSheets,300000);
 </script>
 </body>
 </html>
