@@ -54,6 +54,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .s-T{background:#3f3f46;color:#fff;border-color:#3f3f46}
 .s-SM{background:var(--bg);border-color:var(--fg)}
 .s-SC{background:#18181b;color:#fff;border-color:#52525b}
+.s-DG{background:var(--bg);color:var(--fg);border:1px solid var(--line)}
 .s-Z{background:var(--bg);border:1px dashed var(--mut)}
 .s-E{background:var(--line);border-color:var(--fg);font-weight:700}
 .s-D{background:var(--soft);color:var(--mut);border-color:var(--line)}
@@ -99,6 +100,7 @@ th:first-child,td:first-child{text-align:left;font-weight:700;padding-left:14px}
       <span class="pill s-SM">Sáb Mañ 08:30–13:30</span>
       <span class="pill s-SC">Sáb Comp 8:30–13:30 / 16:30–20</span>
       <span class="pill s-Z">Zona</span>
+      <span class="pill s-DG">Digital</span>
       <span class="pill s-E">★ Evento</span>
       <span class="pill s-D">Descanso</span>
     </div>
@@ -140,7 +142,7 @@ const GOALS={"2026-11":{unit:"Unidades",total:29,target:{emanuel:7,ignacio:7,val
 
 const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DAYS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-const SH={M:["Mañana","08:30–14:00"],T:["Tarde","14:00–20:00"],SM:["Sáb Mañ","08:30–13:30"],SC:["Sáb Comp","8:30–13:30 / 16:30–20"],Z:["Zona","Viaje a zona"],E:["Evento","Activación"],D:["Descanso","Sin guardia"]};
+const SH={M:["Mañana","08:30–14:00"],T:["Tarde","14:00–20:00"],SM:["Sáb Mañ","08:30–13:30"],SC:["Sáb Comp","8:30–13:30 / 16:30–20"],Z:["Zona","Viaje a zona"],DG:["Digital","Leads digitales"],E:["Evento","Activación"],D:["Descanso","Sin guardia"]};
 const now=new Date();
 let Y=now.getFullYear(),Mo=now.getMonth(),filter="all";
 if(!Object.keys(SCHEDULE).some(k=>k.startsWith(Y+"-"+String(Mo+1).padStart(2,"0")))){Y=2026;Mo=10}
@@ -153,7 +155,8 @@ function day(y,m,d){
   const a={};v.split(",").forEach((c,i)=>a[SELLERS[i].id]=c);
   return{a,note:NOTES[key(y,m,d)]||""};
 }
-function chg(n){Mo+=n;if(Mo>11){Mo=0;Y++}if(Mo<0){Mo=11;Y--}render()}
+let nav=false;
+function chg(n){nav=true;Mo+=n;if(Mo>11){Mo=0;Y++}if(Mo<0){Mo=11;Y--}render()}
 function goToday(){Y=now.getFullYear();Mo=now.getMonth();render()}
 function setF(id){filter=id;render()}
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400)}
@@ -203,7 +206,7 @@ function render(){
     else if(dd.hol)body=`<div class="hol"><span>Feriado</span>${dd.hol}</div>`;
     else{
       if(dow>=1&&dow<=5){const m=SELLERS.filter(s=>dd.a[s.id]==="M").length,t=SELLERS.filter(s=>dd.a[s.id]==="T").length;if(m<2)warn=`! Mañ: ${m}/2`;else if(t<1)warn="! Tar: 0/1"}
-      body=vis.map(s=>{const c=dd.a[s.id]||"Z";return`<div class="sh s-${c}" title="${s.name}: ${SH[c][0]} (${SH[c][1]})"><b>${s.name}</b><small><b>${SH[c][0]}</b><br>${SH[c][1]}</small></div>`}).join("");
+      body=vis.map(s=>{const c=dd.a[s.id];if(!c)return"";return`<div class="sh s-${c}" title="${s.name}: ${SH[c][0]} (${SH[c][1]})"><b>${s.name}</b><small><b>${SH[c][0]}</b><br>${SH[c][1]}</small></div>`}).join("");
       if(dd.note)body+=`<div class="note">• ${dd.note}</div>`;
     }
     h+=`<div class="cell ${dow===0?"sun":""} ${isT?"today":""}"><div class="dn"><span class="n">${d}</span>${warn?`<span class="warn">${warn}</span>`:""}</div>${body}</div>`;
@@ -218,6 +221,7 @@ function render(){
     let mc=0,tc=0;
     SELLERS.forEach(s=>{
       const c=dd.a[s.id];
+      if(!c||c==="DG")return;
       if(dow<6){if(c==="M"){st[s.id].m++;mc++}else if(c==="T"){st[s.id].t++;tc++}else if(c==="E")st[s.id].ev++;else st[s.id].z++}
       else{if(c==="SM"||c==="SC"){st[s.id].sab++;const f=day(Y,Mo,d-1);if(f&&f.a&&f.a[s.id]==="Z")al.push(`<b>${s.name}</b>: sáb ${d} con guardia pegado al vie ${d-1} en Zona.`)}else if(c==="E")st[s.id].ev++}
     });
@@ -225,8 +229,9 @@ function render(){
   }
   const rows=SELLERS.map(s=>{const x=st[s.id],tg=g?g.target[s.id]||0:0,dn=g?g.done[s.id]||0:0,pr=p.el?Math.round(dn/p.eff*p.tot*10)/10:0;
     return{s,x,tot:x.m+x.t+x.sab+x.ev,tg,dn,pr,ps:status(pr,tg),pc:tg?Math.min(100,Math.round(dn/tg*100)):0}});
-  rows.sort((a,b)=>b.pc-a.pc||b.ps.pct-a.ps.pct||b.dn-a.dn);
-  document.getElementById("sum").innerHTML=rows.map((r,i)=>`<tr><td>${i===0&&r.pc>0?"🥇 ":""}${r.s.name}</td><td>${r.tg}</td><td><b>${r.dn}</b></td>
+  const shown=rows.filter(r=>r.tot>0||r.tg>0||r.dn>0||r.x.z>0);
+  shown.sort((a,b)=>b.pc-a.pc||b.ps.pct-a.ps.pct||b.dn-a.dn);
+  document.getElementById("sum").innerHTML=shown.map((r,i)=>`<tr><td>${i===0&&r.pc>0?"🥇 ":""}${r.s.name}</td><td>${r.tg}</td><td><b>${r.dn}</b></td>
     <td><div style="display:flex;align-items:center;gap:8px"><div class="mini" style="flex:1"><i style="width:${r.pc}%;background:${r.ps.c}"></i></div><b style="font-size:12px;color:${r.ps.c}">${r.pc}%</b></div></td>
     <td style="color:${r.ps.c};font-weight:800;white-space:nowrap">${r.ps.e} ${r.pr} (${r.ps.pct}%)</td>
     <td>${r.x.m}</td><td>${r.x.t}</td><td>${r.x.z}</td><td>${r.x.sab}</td><td>${r.x.ev}</td><td><b>${r.tot}</b></td></tr>`).join("");
@@ -269,7 +274,7 @@ async function loadSheets(){
     if(iF<0||!sc.length)throw new Error("formato");
     const SC={},NT={};
     t.slice(1).forEach(r=>{const d=pDate(r[iF]);if(!d)return;const k=key(d[0],d[1]-1,d[2]);const hol=iH>=0?(r[iH]||"").trim():"";
-      if(hol)SC[k]="H:"+hol;else SC[k]=sc.map(i=>{const v=(r[i]||"").trim().toUpperCase();return SH[v]?v:"Z"}).join(",");
+      if(hol)SC[k]="H:"+hol;else SC[k]=sc.map(i=>{const v=(r[i]||"").trim().toUpperCase();return v===""?"":(SH[v]?v:"Z")}).join(",");
       if(iN>=0&&(r[iN]||"").trim())NT[k]=r[iN].trim()});
     SELLERS.length=0;sc.forEach(i=>SELLERS.push({id:norm(h[i]),name:h[i]}));
     Object.keys(SCHEDULE).forEach(k=>delete SCHEDULE[k]);Object.assign(SCHEDULE,SC);
@@ -284,6 +289,7 @@ async function loadSheets(){
         Object.keys(GOALS).forEach(k=>delete GOALS[k]);Object.assign(GOALS,G);
       }
     }
+    if(!nav){const k=key(now.getFullYear(),now.getMonth(),1).slice(0,7);if(Object.keys(SCHEDULE).some(x=>x.startsWith(k))){Y=now.getFullYear();Mo=now.getMonth()}}
     render();
   }catch(e){toast("No se pudo leer la planilla; se muestran los últimos datos guardados")}
 }
